@@ -1,0 +1,21 @@
+# Next.js
+apps/nextjs/.next/
+apps/nextjs/out/
+apps/nextjs/node_modules/
+
+# PHP
+apps/themosis/vendor/
+apps/themosis/composer.lock
+
+# Environment files (contain secrets)
+apps/nextjs/.env
+apps/nextjs/.env.local
+apps/nextjs/.env.production
+apps/themosis/.env
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

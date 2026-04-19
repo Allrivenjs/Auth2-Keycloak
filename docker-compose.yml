@@ -1,0 +1,86 @@
+version: "3.9"
+
+services:
+  # ─── Keycloak Identity Provider ─────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.3
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: dev-mem           # in-memory DB for local dev (switch to postgres for prod)
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ─── Next.js Frontend ───────────────────────────────────────────────────────
+  nextjs:
+    build:
+      context: ./apps/nextjs
+      dockerfile: Dockerfile
+    environment:
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: change-me-in-production
+      KEYCLOAK_CLIENT_ID: nextjs-client
+      KEYCLOAK_CLIENT_SECRET: nextjs-secret
+      KEYCLOAK_ISSUER: http://keycloak:8080/realms/auth2
+      # URL used by the browser (public-facing Keycloak)
+      NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:8080
+      NEXT_PUBLIC_KEYCLOAK_REALM: auth2
+    ports:
+      - "3000:3000"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  # ─── Themosis / WordPress Backend ───────────────────────────────────────────
+  mysql:
+    image: mysql:8.3
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wp
+      MYSQL_PASSWORD: wp
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  themosis:
+    build:
+      context: ./apps/themosis
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: mysql
+      DB_NAME: wordpress
+      DB_USER: wp
+      DB_PASSWORD: wp
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: auth2
+      KEYCLOAK_CLIENT_ID: themosis-client
+      KEYCLOAK_CLIENT_SECRET: themosis-secret
+      # Allow CORS from the Next.js app
+      ALLOWED_ORIGIN: http://localhost:3000
+    ports:
+      - "8000:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
