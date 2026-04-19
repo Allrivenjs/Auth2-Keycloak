@@ -141,4 +141,10 @@ export const authOptions: NextAuthOptions = {
   },
 };
 
-export default NextAuth(authOptions);
+/**
+ * Named GET/POST exports are required by the Next.js 15 App Router.
+ * `authOptions` is also exported so that `getServerSession(authOptions)`
+ * can be used in Server Components and other route handlers.
+ */
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
