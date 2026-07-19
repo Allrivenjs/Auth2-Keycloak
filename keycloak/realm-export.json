@@ -1,5 +1,4 @@
 {
-  "_comment": "DEV ONLY — These client secrets and the demo user password are for local development only. Regenerate all secrets and remove the demo user before using this realm in any environment exposed to the internet.",
   "realm": "auth2",
   "enabled": true,
   "displayName": "Auth2 Realm",

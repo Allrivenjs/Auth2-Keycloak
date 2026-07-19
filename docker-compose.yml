@@ -1,27 +1,26 @@
-version: "3.9"
-
 services:
   # ─── Keycloak Identity Provider ─────────────────────────────────────────────
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0.3
+    image: quay.io/keycloak/keycloak:26.0.0
     command: start-dev --import-realm
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_DB: dev-mem           # in-memory DB for local dev (switch to postgres for prod)
       KC_HTTP_PORT: 8080
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HEALTH_ENABLED: "true"
+      
     volumes:
       - ./keycloak:/opt/keycloak/data/import
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '200 OK'"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 5s
+      timeout: 5s
       retries: 10
-      start_period: 60s
+      start_period: 10s
 
   # ─── Next.js Frontend ───────────────────────────────────────────────────────
   nextjs:
@@ -34,6 +33,7 @@ services:
       KEYCLOAK_CLIENT_ID: nextjs-client
       KEYCLOAK_CLIENT_SECRET: nextjs-secret
       KEYCLOAK_ISSUER: http://keycloak:8080/realms/auth2
+      KEYCLOAK_PUBLIC_ISSUER: http://localhost:8080/realms/auth2
       # URL used by the browser (public-facing Keycloak)
       NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:8080
       NEXT_PUBLIC_KEYCLOAK_REALM: auth2
