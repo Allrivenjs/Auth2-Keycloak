@@ -1,0 +1,28 @@
+{
+  "name": "auth2/keycloak-themosis",
+  "description": "Keycloak JWT authentication integration for Themosis / WordPress",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.1",
+    "firebase/php-jwt": "^7.0",
+    "guzzlehttp/guzzle": "^7.8"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^12.5.22",
+    "mockery/mockery": "^1.6"
+  },
+  "autoload": {
+    "psr-4": {
+      "Auth2\\Keycloak\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Auth2\\Keycloak\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit --testdox"
+  }
+}
